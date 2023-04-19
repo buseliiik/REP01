@@ -5,10 +5,12 @@ import (
 	"log"
 	"net"
 	"sync"
+	"github.com/buseliiik/is105sem03/mycrypt"
+	 "github.com/buseliiik/funtemps/conv" 
+	"github.com/buseliiik/minyr/yr"
 )
 
 func main() {
-
 	var wg sync.WaitGroup
 
 	server, err := net.Listen("tcp", "172.17.0.3:8080")
@@ -34,38 +36,37 @@ func main() {
 						if err != io.EOF {
 							log.Println(err)
 						}
-						return // fra for løkke
+						return // fra for-løkke
 					}
-					switch msg := string(buf[:n]); msg {
-  				        case "ping":
-						_, err = c.Write([]byte("pong"))
-					default:
-						_, err = c.Write(buf[:n])
-					}
+					log.Println("Krypter melding: ", string(buf[:n]))
+					cryptedMsg := mycrypt.Krypter([]rune(string(buf[:n])), mycrypt.ALF_SEM03, len(mycrypt.ALF_SEM03)-4)
+					log.Println("Kryptert melding: ", string(cryptedMsg))
+					
+					switch msg := string(cryptedMsg); msg {
+case "ping":
+    _, err = c.Write([]byte("pong"))
+case "Kjevik":
+    temp, err := yr.GetTemperature()
+    if err != nil {
+        log.Println(err)
+        return
+    }
+    fahrTemp := conv.CelsiusToFahrenheit(temp)
+    resp := fmt.Sprintf("Temperature in Kjevik: %.2f F", fahrTemp)
+    _, err = c.Write([]byte(resp))
+default:
+    _, err = c.Write(cryptedMsg)
+}
+
 					if err != nil {
 						if err != io.EOF {
 							log.Println(err)
 						}
-						return // fra for løkke
+						return // fra for-løkke
 					}
 				}
 			}(conn)
 		}
 	}()
 	wg.Wait()
-}
-
-dekryptertMelding := mycrypt.Krypter([]rune(string(buf[:n])), mycrypt.ALF_SEM03, len(mycrypt.ALF_SEM03)-4)
-log.Println("Dekrypter melding: ", string(dekryptertMelding))
-switch msg := string(dekryptertMelding); msg {
-    case "ping":
-        _, err = c.Write([]byte("pong"))
-    default:
-        _, err = c.Write(buf[:n])
-    }
-if err != nil {
-    if err != io.EOF {
-        log.Println(err)
-    }
-    return // fra for-løkke
 }
